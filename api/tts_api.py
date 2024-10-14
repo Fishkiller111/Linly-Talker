@@ -1,3 +1,4 @@
+import configparser
 from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -6,6 +7,22 @@ import gc, torch
 from loguru import logger
 import asyncio
 from typing import Optional
+from tencentcloud.cos import CosS3Client
+from tencentcloud.cos import CosConfig
+
+# 读取配置文件
+config = configparser.ConfigParser()
+config.read('config.ini')
+# 从配置文件获取COS的相关信息
+secret_id = config['cos']['secret_id']
+secret_key = config['cos']['secret_key']
+region = config['cos']['region']
+bucket_name = config['cos']['bucket_name']
+
+# 初始化COS客户端
+config = CosConfig(Region=region, SecretID=secret_id, SecretKey=secret_key)
+cos_client = CosS3Client(config)
+
 
 sys.path.append("./")
 

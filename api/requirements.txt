@@ -1,2 +1,4 @@
 fastapi
 requests
+loguru
+tencentcloud-sdk-python

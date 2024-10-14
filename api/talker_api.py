@@ -1,3 +1,4 @@
+import configparser
 from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form
 from pydantic import BaseModel
 import shutil
@@ -8,6 +9,22 @@ import gc
 import torch
 from typing import Optional
 from fastapi.responses import FileResponse
+from tencentcloud.cos import CosS3Client
+from tencentcloud.cos import CosConfig
+
+# 读取配置文件
+config = configparser.ConfigParser()
+config.read('config.ini')
+# 从配置文件获取COS的相关信息
+secret_id = config['cos']['secret_id']
+secret_key = config['cos']['secret_key']
+region = config['cos']['region']
+bucket_name = config['cos']['bucket_name']
+
+# 初始化COS客户端
+config = CosConfig(Region=region, SecretID=secret_id, SecretKey=secret_key)
+cos_client = CosS3Client(config)
+
 
 sys.path.append("./")
 app = FastAPI()
@@ -156,6 +173,14 @@ async def talker_response(
 
         # Ensure the video file exists and return it
         if os.path.exists(video_path):
+             # 上传视频到COS
+            with open(video_path, 'rb') as f:
+                response = cos_client.upload_file(
+                    Bucket=bucket_name,
+                    LocalFilePath=video_path,
+                    Key=os.path.basename(video_path)  # COS文件名
+                )
+                logger.info(f"Video uploaded to COS: {response}")
             return FileResponse(video_path, media_type='video/mp4', filename=os.path.basename(video_path))
         else:
             raise HTTPException(status_code=404, detail="Video file not found")
